@@ -1,6 +1,8 @@
 import Head from 'next/head'
+import Searchbar from '../components/searchbar'
+import { withAuth } from '../components/withAuth'
 
-export default function Home() {
+function Home() {
   return (
     <>
       <Head>
@@ -9,9 +11,21 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className='text-3xl font-bold underline'>
-        hi
+      
+      <div className='flex w-full'>
+        <div className='w-72 bg-zinc-700 text-white h-screen '>
+          <Searchbar/>
+          {/* displaying all chats */}
+        </div>
+        <div className='grow bg-zinc-600 h-screen text-zinc-100 '>
+          {/* display selected chat */}
+        </div>
       </div>
+      
+      
+      
     </>
   )
 }
+
+export default withAuth(Home)
