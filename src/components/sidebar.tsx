@@ -3,10 +3,12 @@ import {MdNotificationsNone, MdOutlineSettings} from "react-icons/md"
 import {HiOutlineUserGroup} from "react-icons/hi"
 import {CgProfile} from "react-icons/cg"
 import Link from "next/link";
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { UserContext } from "@/context/UserContext";
 import Image from "next/image";
 import Profile from "@/components/profile"
+import { collection, addDoc, setDoc, doc, serverTimestamp } from "firebase/firestore"; 
+import { db } from "../../firebase";
 
 export default function Sidebar() {
     const authUser = useContext(UserContext)
@@ -18,6 +20,24 @@ export default function Sidebar() {
         setToggle(!toggle);
     }
 
+    useEffect(() => {
+        const addUser = async () => {
+            if (authUser) {
+                try {
+                    const docRef = await setDoc(doc(db, "users", authUser?.uid), {
+                        email: authUser?.email,
+                        displayName: authUser?.displayName,
+                        profilePicture: authUser?.photoURL,
+                        lastSeen: serverTimestamp()
+                    }, {merge: true});
+                    console.log("Document written with ID: ", docRef)
+                } catch (e) {
+                    console.error("Error adding document: ", e);
+                }
+            }
+        }
+        addUser();
+    }, [authUser])
     
     
     return (

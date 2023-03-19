@@ -1,8 +1,104 @@
+import AddUser from '@/components/adduser'
 import Head from 'next/head'
 import Searchbar from '../components/searchbar'
 import { withAuth } from '../components/withAuth'
+import {useState, useContext} from 'react'
+import { UserContext } from "@/context/UserContext"
+import { db } from '../../firebase'
+import { getDocs, doc, collection, query, where, addDoc} from "firebase/firestore"
+import validator from "email-validator";
+import Allchats from '@/components/allchats'
 
 function Home() {
+
+  const authUser = useContext(UserContext)
+
+  const [addUser, setAddUser] : any = useState('');
+  const [err, setErr] : any = useState('');
+
+  const userRef = collection(db, "users");
+  const userChatRef = collection(db, "chats")
+
+  const chatAlreadyAdded = async () => {
+    const q = query(userChatRef, where("users.recipient", "==", addUser));
+
+    const querySnapshot = await getDocs(q);
+    const existedChat = querySnapshot.forEach(async (doc) => {
+      return doc.data()
+    })
+    console.log('existedchat:',existedChat)
+    return existedChat;
+  }
+
+  chatAlreadyAdded();
+
+  const handleAdd = async (e : React.FormEvent<HTMLFormElement>)  => {
+      e.preventDefault();
+      
+      if (validator.validate(addUser)) {
+        const q = query(userRef, where("email", "==", addUser));
+      
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.docs.length > 0) {
+          querySnapshot.forEach(async (doc) => {
+            
+            if (authUser?.email !== doc.data().email) {
+              try {
+                const docRef = await addDoc(collection(db, "chats"), {
+                  users: {
+                    sender: authUser?.email,
+                    recipient: doc.data().email
+                  }
+                });
+                console.log("Document written with ID: ", docRef)
+                setErr('')
+                } catch (e) {
+                  console.error("Error adding document: ", e);
+                }
+              console.log(doc.id, " => ", doc.data());
+            } else {
+              setErr('You cannot add yourself')
+              console.log('You cannot add yourself')
+            }
+          });
+        } else {
+          setErr('This user does not exist')
+          console.log('This uer does not exist')
+        };
+        // querySnapshot.forEach(async (doc) => {
+        //   console.log(doc.data());
+
+        //   if (doc.data()) {
+        //     if (authUser?.email !== doc.data().email) {
+        //       try {
+        //         const docRef = await addDoc(collection(db, "chats"), {
+        //           users: {
+        //             sender: authUser?.email,
+        //             recipient: doc.data().email
+        //           }
+        //         });
+        //         console.log("Document written with ID: ", docRef)
+        //         setErr('')
+        //         } catch (e) {
+        //           console.error("Error adding document: ", e);
+        //         }
+        //       console.log(doc.id, " => ", doc.data());
+        //     } else {
+        //       setErr('You cannot add yourself')
+        //       console.log('You cannot add yourself')
+        //     }
+        //   } else {
+        //     setErr('This user does not exist')
+        //     console.log('This uer does not exist')
+        //   }
+        // });
+      } else {
+        setErr('Please enter a valid email');
+        console.log('pls enter a valid email')
+      }
+  }
+
   return (
     <>
       <Head>
@@ -14,6 +110,10 @@ function Home() {
       
       <div className='flex w-full'>
         <div className='w-72 bg-zinc-700 text-white h-screen '>
+          <AddUser addUser={addUser} setAddUser={setAddUser} handleAdd={handleAdd}/>
+          <div className='text-zinc-400 italic text-sm text-center'>
+            {err}
+          </div>
           <Searchbar/>
           {/* displaying all chats */}
         </div>
@@ -21,8 +121,6 @@ function Home() {
           {/* display selected chat */}
         </div>
       </div>
-      
-      
       
     </>
   )
